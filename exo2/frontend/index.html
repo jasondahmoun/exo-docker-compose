@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Exercice 2 – CRUD Utilisateurs</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        input {
+            padding: 6px;
+            margin: 4px 0;
+            width: 220px;
+        }
+
+        button {
+            padding: 6px 10px;
+            margin: 4px 4px 4px 0;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .error {
+            color: #b00020;
+        }
+
+        .ok {
+            color: #0a7a0a;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>CRUD</h1>
+    <div class="row">
+        <div class="card">
+            <h3>Créer un utilisateur</h3>
+            <div>
+                <input id="c_username" placeholder="nom d'utilisateur" />
+            </div>
+            <div>
+                <input id="c_password" placeholder="mot de passe" />
+            </div>
+            <button onclick="createUser()">Créer</button>
+        </div>
+
+        <div class="card">
+            <h3>Modifier un utilisateur</h3>
+            <div>
+                <input id="u_id" placeholder="identifiant (id)" />
+            </div>
+            <div>
+                <input id="u_username" placeholder="nouveau nom d'utilisateur" />
+            </div>
+            <div>
+                <input id="u_password" placeholder="nouveau mot de passe" />
+            </div>
+            <button onclick="updateUser()">Mettre à jour</button>
+        </div>
+
+        <div class="card">
+            <h3>Supprimer un utilisateur</h3>
+            <div>
+                <input id="d_id" placeholder="identifiant (id)" />
+            </div>
+            <button onclick="deleteUser()">Supprimer</button>
+        </div>
+
+        <div class="card">
+            <h3>Consulter un utilisateur</h3>
+            <div>
+                <input id="g_id" placeholder="identifiant (id)" />
+            </div>
+            <button onclick="getOne()">Récupérer</button>
+            <pre id="one"></pre>
+        </div>
+    </div>
+
+    <div style="margin-top: 12px;">
+        <button onclick="loadUsers()">Rafraîchir la liste</button>
+        <span id="status"></span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>nom d'utilisateur</th>
+                <th>mot de passe</th>
+            </tr>
+        </thead>
+        <tbody id="users"></tbody>
+    </table>
+
+    <script>
+        const API = "http://localhost:5000";
+        function setStatus(message, ok = true) {
+            const el = document.getElementById("status");
+            el.className = ok ? "ok" : "error";
+            el.textContent = message;
+            setTimeout(() => (el.textContent = ""), 2500);
+        }
+
+        async function loadUsers() {
+            try {
+                const r = await fetch(`${API}/api/users`);
+                const data = await r.json();
+                const tbody = document.getElementById("users");
+                tbody.innerHTML = "";
+
+                data.forEach(u => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${u.id}</td>
+                        <td>${u.username ?? ""}</td>
+                        <td>${u.password ?? ""}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                setStatus("Backend injoignable (vérifiez les ports ou CORS)", false);
+            }
+        }
+
+        async function createUser() {
+            const username = document.getElementById("c_username").value;
+            const password = document.getElementById("c_password").value;
+
+            const r = await fetch(`${API}/api/users`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }),
+            });
+
+            if (!r.ok) return setStatus("Échec de la création", false);
+
+            setStatus("Utilisateur créé");
+            loadUsers();
+        }
+
+        async function updateUser() {
+            const id = document.getElementById("u_id").value;
+            const username = document.getElementById("u_username").value;
+            const password = document.getElementById("u_password").value;
+
+            const r = await fetch(`${API}/api/users/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }),
+            });
+
+            if (!r.ok) return setStatus("Échec de la mise à jour (id incorrect ?)", false);
+
+            setStatus("Utilisateur mis à jour");
+            loadUsers();
+        }
+
+        async function deleteUser() {
+            const id = document.getElementById("d_id").value;
+
+            const r = await fetch(`${API}/api/users/${id}`, { method: "DELETE" });
+            if (!r.ok) return setStatus("Échec de la suppression (id incorrect ?)", false);
+
+            setStatus("Utilisateur supprimé");
+            loadUsers();
+        }
+
+        async function getOne() {
+            const id = document.getElementById("g_id").value;
+            const out = document.getElementById("one");
+            out.textContent = "";
+
+            const r = await fetch(`${API}/api/users/${id}`);
+            const data = await r.json();
+            out.textContent = JSON.stringify(data, null, 2);
+        }
+
+        loadUsers();
+    </script>
+</body>
+
+</html>
