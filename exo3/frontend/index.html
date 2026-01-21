@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Exercice 3</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .top {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .good {
+            color: #2e7d32;
+        }
+
+        .error {
+            color: #b00020;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>User tor</h1>
+
+    <div class="top">
+        <button onclick="charger()">Charger des utilisateurs</button>
+    </div>
+
+    <pre id="ip" class="muted"></pre>
+    <div id="grid" class="grid"></div>
+
+   <script>
+    const API = "http://localhost:5000";
+
+    function setStatus(msg, isError = false) {
+        const el = document.getElementById("status");
+        el.className = isError ? "error" : "good";
+        el.textContent = msg;
+        setTimeout(() => (el.textContent = ""), 3000);
+    }
+
+    async function charger() {
+        document.getElementById("ip").textContent = "";
+        document.getElementById("grid").innerHTML = "";
+        setStatus("Chargement...");
+
+        try {
+            const r = await fetch(`${API}/api/users`);
+            const data = await r.json();
+            if (!r.ok) throw new Error(data?.error || "Erreur");
+
+            const grid = document.getElementById("grid");
+            data.forEach(u => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.innerHTML = `<img src="${u.photo}" alt="photo" /><div><div><b>${u.nom}</b></div></div>`;
+                grid.appendChild(div);
+            });
+
+            setStatus(`OK: ${data.length} utilisateurs`);
+        } catch (e) {
+            setStatus("Backend injoignable ou erreur Tor", true);
+        }
+    }
+
+    charger();
+</script>
+</body>
+
+</html>

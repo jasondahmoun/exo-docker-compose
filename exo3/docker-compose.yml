@@ -1,0 +1,28 @@
+services:
+  tor:
+    image: dperson/torproxy
+    restart: unless-stopped
+    environment:
+      - LOCATION=FR
+      - STRICT=1
+      - TOR_MaxCircuitDirtiness=600
+    expose:
+      - "9050"
+      - "9051"
+
+  backend:
+    build: ./backend
+    ports:
+      - "${BACKEND_PORT}:5000"
+    environment:
+      - URL_USERS=${URL_USERS}
+      - TOR_CONFIG=${TOR_CONFIG}
+    depends_on:
+      - tor
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
