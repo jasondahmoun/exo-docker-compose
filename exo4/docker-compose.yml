@@ -1,0 +1,72 @@
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  tor:
+    image: dperson/torproxy
+    container_name: tor
+    restart: unless-stopped
+    ports:
+      - "9050:9050"
+      - "9051:9051"
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    env_file:
+      - docker/postgres.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    env_file:
+      - docker/pgadmin.env
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin_servers.json:/pgadmin4/servers.json
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/backend.dockerfile
+    container_name: backend
+    env_file:
+      - docker/backend.env
+    ports:
+      - "5001:5001"
+    depends_on:
+      - postgres
+      - tor
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/frontend.dockerfile
+    container_name: frontend
+    env_file:
+      - docker/frontend.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  pgadmin_data:
